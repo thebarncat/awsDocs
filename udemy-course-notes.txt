@@ -1,0 +1,19 @@
+
+NEW account:
+https://685804732721.signin.aws.amazon.com/console
+
+Know at a high level:
+
+•Redis Auth
+•Cognito
+•ECS
+•Cloudformation
+•AWS WAF
+•AWS Batch
+•Kinesis/Firehose
+
+before continuing fix the ELB stuff
+
+left off:
+Section 4.45
+Slide 

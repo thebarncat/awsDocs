@@ -1,0 +1,23 @@
+<html>
+  <head>
+    <title>S3 POST Form</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+  </head>
+  <body>
+    <form action="https://hello.thebarncat.net.s3.amazonaws.com/" method="post" enctype="multipart/form-data">
+      <input type="hidden" name="key" value="uploads/${filename}"> <input type="hidden" name="AWSAccessKeyId" value="AKIAIXDESEITFPEOKLDQ">
+      <!-- To make  uploaded file public, use the value public-read -->
+      <input type="hidden" name="acl" value="private">
+      <!-- should point to a Success page -->
+      <input type="hidden" name="success_action_redirect" value="http://hello.thebarncat.net/success.html">
+      <input type="hidden" name="policy" value="eyJjb25kaXRpb25zIjogW3siYnVja2V0IjogImhlbGxvLnRoZWJhcm5jYXQubmV0In0sIFsic3RhcnRzLXdpdGgiLCAiJGtleSIsICJ1cGxvYWRzLyJdLCB7ImFjbCI6ICJwcml2YXRlIn0sIHsic3VjY2Vzc19hY3Rpb25fcmVkaXJlY3QiOiAiaHR0cDovL2hlbGxvLnRoZWJhcm5jYXQubmV0L3N1Y2Nlc3MuaHRtbCJ9LCBbInN0YXJ0cy13aXRoIiwgIiRDb250ZW50LVR5cGUiLCAiIl0sIFsiY29udGVudC1sZW5ndGgtcmFuZ2UiLCAwLCA1MjQyODgwXV0sICJleHBpcmF0aW9uIjogIjIwMjAtMDEtMDFUMDA6MDA6MDBaIn0=">
+      <input type="hidden" name="signature" value="2k5MjvzoLNi9kwO0pZ9B3a8T0mY=">
+      <!-- default value application/octet-stream  -->
+      <input type="hidden" name="Content-Type" value="image/jpeg">
+      <!-- Include any additional input fields here -->
+      File to upload to S3: <input name="file" type="file">
+      <br>
+      <input type="submit" value="Upload File to S3">
+    </form>
+  </body>
+</html>

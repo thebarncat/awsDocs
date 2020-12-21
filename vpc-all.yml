@@ -1,0 +1,335 @@
+
+AWSTemplateFormatVersion: 2010-09-09
+
+Description: VPC and subnets
+
+Parameters:
+  VpcCidr:
+    Type: String
+    AllowedPattern: '^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\/(?:2[0-8]|1[6-9])$'
+    Description: CIDR for VPC
+    Default: 10.0.61.0/22
+
+  EnableNat:
+    Type: String
+    Description: Whether to create NAT gateways for private subnets
+    Default: false
+
+  PublicSubnet1Cidr:
+    Type: String
+    AllowedPattern: '^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\/(?:2[0-8]|1[6-9])$'
+    Description: CIDR for public subnet 1
+    Default: 10.0.61.0/26
+
+  PublicSubnet2Cidr:
+    Type: String
+    AllowedPattern: '^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\/(?:2[0-8]|1[6-9])$'
+    Description: CIDR for public subnet 2
+    Default: 10.0.61.64/26
+
+  ServiceSubnet1Cidr:
+    Type: String
+    AllowedPattern: '^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\/(?:2[0-8]|1[6-9])$'
+    Description: CIDR for service (private) subnet 1
+    Default: 10.0.62.0/26
+
+  ServiceSubnet2Cidr:
+    Type: String
+    AllowedPattern: '^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\/(?:2[0-8]|1[6-9])$'
+    Description: CIDR for service (private) subnet 2
+    Default: 10.0.62.64/26
+
+  DataSubnet1Cidr:
+    Type: String
+    AllowedPattern: '^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\/(?:2[0-8]|1[6-9])$'
+    Description: CIDR for data (private) subnet 1
+    Default: 10.0.63.0/26
+
+  DataSubnet2Cidr:
+    Type: String
+    AllowedPattern: '^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\/(?:2[0-8]|1[6-9])$'
+    Description: CIDR for data (private) subnet 2
+    Default: 10.0.63.64/26
+
+Conditions:
+  EnableNat: !Equals [ !Ref EnableNat, "true" ]
+
+Resources:
+  Vpc:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: !Ref VpcCidr
+      Tags:
+        - Key: Name
+          Value: !Sub ${AWS::StackName}::Vpc
+
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Sub ${AWS::StackName}::InternetGateway
+
+  InternetGatewayVpcAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId: !Ref Vpc
+      InternetGatewayId: !Ref InternetGateway
+
+  NatGatewayAz1:
+    Type: AWS::EC2::NatGateway
+    Condition: EnableNat
+    DependsOn: InternetGatewayVpcAttachment
+    Properties:
+      AllocationId: !GetAtt NatEipAz1.AllocationId
+      SubnetId: !Ref PublicSubnet1
+
+  NatEipAz1:
+    Type: AWS::EC2::EIP
+    Condition: EnableNat
+    DependsOn: InternetGatewayVpcAttachment
+    Properties:
+      Domain: vpc
+
+  PublicSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref Vpc
+      AvailabilityZone: !Select 
+        - 0
+        - Fn::GetAZs: !Ref AWS::Region
+      CidrBlock: !Ref PublicSubnet1Cidr
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: !Sub ${AWS::StackName}::PublicSubnet1
+
+  PublicSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref Vpc
+      AvailabilityZone: !Select 
+        - 1
+        - Fn::GetAZs: !Ref AWS::Region
+      CidrBlock: !Ref PublicSubnet2Cidr
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: !Sub ${AWS::StackName}::PublicSubnet2
+
+  PublicSubnetsRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref Vpc
+      Tags:
+        - Key: Name
+          Value: !Sub ${AWS::StackName}::PublicSubnetsRouteTable
+
+  PublicSubnet1Association:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PublicSubnetsRouteTable
+      SubnetId: !Ref PublicSubnet1
+
+  PublicSubnet2Association:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PublicSubnetsRouteTable
+      SubnetId: !Ref PublicSubnet2
+
+  PublicSubnetsInternetGatewayRoute:
+    Type: AWS::EC2::Route
+    DependsOn: InternetGatewayVpcAttachment
+    Properties:
+      RouteTableId: !Ref PublicSubnetsRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway    
+
+  ServiceSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref Vpc
+      AvailabilityZone: !Select 
+        - 0
+        - Fn::GetAZs: !Ref AWS::Region
+      CidrBlock: !Ref ServiceSubnet1Cidr
+      Tags:
+        - Key: Name
+          Value: !Sub ${AWS::StackName}::ServiceSubnet1
+
+  ServiceSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref Vpc
+      AvailabilityZone: !Select 
+        - 1
+        - Fn::GetAZs: !Ref AWS::Region
+      CidrBlock: !Ref ServiceSubnet2Cidr
+      Tags:
+        - Key: Name
+          Value: !Sub ${AWS::StackName}::ServiceSubnet2
+
+  ServiceSubnetsRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref Vpc
+      Tags:
+        - Key: Name
+          Value: !Sub ${AWS::StackName}::ServiceSubnetsRouteTable
+
+  ServiceSubnet1Association:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref ServiceSubnetsRouteTable
+      SubnetId: !Ref ServiceSubnet1
+
+  ServiceSubnet2Association:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref ServiceSubnetsRouteTable
+      SubnetId: !Ref ServiceSubnet2
+
+  ServiceSubnetsNatGatewayAz1Route:
+    Type: AWS::EC2::Route
+    Condition: EnableNat
+    Properties:
+      RouteTableId: !Ref ServiceSubnetsRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref NatGatewayAz1
+
+  DataSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref Vpc
+      AvailabilityZone: !Select 
+        - 0
+        - Fn::GetAZs: !Ref AWS::Region
+      CidrBlock: !Ref DataSubnet1Cidr
+      Tags:
+        - Key: Name
+          Value: !Sub ${AWS::StackName}::DataSubnet1
+
+  DataSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref Vpc
+      AvailabilityZone: !Select 
+        - 1
+        - Fn::GetAZs: !Ref AWS::Region
+      CidrBlock: !Ref DataSubnet2Cidr
+      Tags:
+        - Key: Name
+          Value: !Sub ${AWS::StackName}::DataSubnet2
+
+  DataSubnetsRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref Vpc
+      Tags:
+        - Key: Name
+          Value: !Sub ${AWS::StackName}::DataSubnetsRouteTable
+
+  DataSubnet1Association:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref DataSubnetsRouteTable
+      SubnetId: !Ref DataSubnet1
+
+  DataSubnet2Association:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref DataSubnetsRouteTable
+      SubnetId: !Ref DataSubnet2
+
+  DataSubnetsNatGatewayAz1Route:
+    Type: AWS::EC2::Route
+    Condition: EnableNat
+    Properties:
+      RouteTableId: !Ref DataSubnetsRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref NatGatewayAz1
+
+Outputs:
+  VpcId:
+    Description: VPC ID
+    Value: !Ref Vpc
+    Export:
+      Name: !Sub ${AWS::StackName}::VpcId
+
+  VpcCidr:
+    Description: VPC CIDR
+    Value: !Ref VpcCidr
+    Export:
+      Name: !Sub ${AWS::StackName}::VpcCidr
+  
+  PublicSubnet1Id:
+    Description: Public subnet 1 ID
+    Value: !Ref PublicSubnet1
+    Export:
+      Name: !Sub ${AWS::StackName}::PublicSubnet1Id
+
+  PublicSubnet1Cidr:
+    Description: Public subnet 1 CIDR
+    Value: !Ref PublicSubnet1Cidr
+    Export:
+      Name: !Sub ${AWS::StackName}::PublicSubnet1Cidr
+
+  PublicSubnet2Id:
+    Description: Public subnet 2 ID
+    Value: !Ref PublicSubnet2
+    Export:
+      Name: !Sub ${AWS::StackName}::PublicSubnet2Id
+
+  PublicSubnet2Cidr:
+    Description: Public subnet 2 CIDR
+    Value: !Ref PublicSubnet2Cidr
+    Export:
+      Name: !Sub ${AWS::StackName}::PublicSubnet2Cidr
+
+  ServiceSubnet1Id:
+    Description: Service subnet 1 ID
+    Value: !Ref ServiceSubnet1
+    Export:
+      Name: !Sub ${AWS::StackName}::ServiceSubnet1Id
+
+  ServiceSubnet1Cidr:
+    Description: Service subnet 1 CIDR
+    Value: !Ref ServiceSubnet1Cidr
+    Export:
+      Name: !Sub ${AWS::StackName}::ServiceSubnet1Cidr
+
+  ServiceSubnet2Id:
+    Description: Service subnet 2 ID
+    Value: !Ref ServiceSubnet2
+    Export:
+      Name: !Sub ${AWS::StackName}::ServiceSubnet2Id
+
+  ServiceSubnet2Cidr:
+    Description: Service subnet 2 CIDR
+    Value: !Ref ServiceSubnet2Cidr
+    Export:
+      Name: !Sub ${AWS::StackName}::ServiceSubnet2Cidr
+
+  DataSubnet1Id:
+    Description: Data subnet 1 ID
+    Value: !Ref DataSubnet1
+    Export:
+      Name: !Sub ${AWS::StackName}::DataSubnet1Id
+
+  DataSubnet1Cidr:
+    Description: Data subnet 1 CIDR
+    Value: !Ref DataSubnet1Cidr
+    Export:
+      Name: !Sub ${AWS::StackName}::DataSubnet1Cidr
+
+  DataSubnet2Id:
+    Description: Data subnet 2 ID
+    Value: !Ref DataSubnet2
+    Export:
+      Name: !Sub ${AWS::StackName}::DataSubnet2Id
+
+  DataSubnet2Cidr:
+    Description: Data subnet 2 CIDR
+    Value: !Ref DataSubnet2Cidr
+    Export:
+      Name: !Sub ${AWS::StackName}::DataSubnet2Cidr

@@ -1,0 +1,31 @@
+CONTROL SERVER ( ControlBastion):
+us-east-1a
+vpc-41164525
+subnet-d00481a6
+sgSSH, ControlServerSG, default
+
+https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/dynamic-dns.html
+https://dnschecker.org/ # for my domain
+
+Amazon Linux 2 AMI (HVM), SSD Volume Type - a
+[ec2-user@ip-172-16-8-170 etc]$ cat system-release
+Amazon Linux release 2 (Karoo)
+
+acct #: 685804732721
+
+Please enter the login/email string for no-ip.com  kippjimmy@yahoo.com
+Please enter the password for user 'kippjimmy@yahoo.com'  diamond81
+
+---------
+TO DO:
+- Re hydrate Control Host
+- udate the AMIs for ./builds CF scripts
+- add ELB creation to EC2-web.yml stack
+- WP redudant load bal etc site using db1.neptuna.int from ROUTE53 
+
+[ec2-user ~]$ sudo chmod 2775 /var/www
+[ec2-user ~]$ find /var/www -type d -exec sudo chmod 2775 {} +
+
+aws cloudformation create-stack --stack-name ELB-webs --template-body file://EC2-web-ELB.yml
+
+

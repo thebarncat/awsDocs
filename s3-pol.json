@@ -1,0 +1,32 @@
+{
+   "Version": "2012-10-17",
+   "Statement": [
+      {
+         "Sid": "statement1",
+         "Effect": "Allow",
+         "Principal": {
+            "AWS": "arn:aws:iam::685804732721:user/heybob"
+         },
+         "Action": [
+            "s3:GetBucketLocation",
+            "s3:ListBucket"
+         ],
+         "Resource": [
+            "arn:aws:s3:::s3-barncat-testbkt"
+         ]
+      },
+      {
+         "Sid": "statement2",
+         "Effect": "Allow",
+         "Principal": {
+            "AWS": "arn:aws:iam::685804732721:user/heybob"
+         },
+         "Action": [
+             "s3:GetObject"
+         ],
+         "Resource": [
+            "arn:aws:s3:::s3-barncat-testbkt/*"
+         ]
+      }
+   ]
+}
